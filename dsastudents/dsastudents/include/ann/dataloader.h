@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/cppFiles/file.h to edit this template
  */
 
-/* 
+/*
  * File:   dataloader.h
  * Author: ltsach
  *
@@ -17,38 +17,51 @@
 
 using namespace std;
 
-template<typename DType, typename LType>
-class DataLoader{
+template <typename DType, typename LType>
+class DataLoader
+{
 public:
-    
 private:
-    Dataset<DType, LType>* ptr_dataset;
+    Dataset<DType, LType> *ptr_dataset;
     int batch_size;
     bool shuffle;
     bool drop_last;
     /*TODO: add more member variables to support the iteration*/
 public:
-    DataLoader(Dataset<DType, LType>* ptr_dataset,
-            int batch_size,
-            bool shuffle=true,
-            bool drop_last=false){
+    DataLoader(Dataset<DType, LType> *ptr_dataset,
+               int batch_size,
+               bool shuffle = true,
+               bool drop_last = false)
+    {
         /*TODO: Add your code to do the initialization */
+        if (shuffle)
+        {
+            ptr_dataset->shuffle();
+        }
+        xt::xarray<Batch<DType, LType>> batches;
+        xt::xarray<DType> data;
+        xt::xarray<LType> label;
+        for (int i = 0; i < ptr_dataset->get_data_shape(0) / batch_size; i++)
+        {
+            Batch batch = Batch(data.range(30 * i, 30 * i + 30))
+        }
+        if (drop_last)
+        {
+        }
     }
-    virtual ~DataLoader(){}
-    
+    virtual ~DataLoader() {}
+
     /////////////////////////////////////////////////////////////////////////
     // The section for supporting the iteration and for-each to DataLoader //
     /// START: Section                                                     //
     /////////////////////////////////////////////////////////////////////////
-    
+
     /*TODO: Add your code here to support iteration on batch*/
-    
+
     /////////////////////////////////////////////////////////////////////////
     // The section for supporting the iteration and for-each to DataLoader //
     /// END: Section                                                       //
     /////////////////////////////////////////////////////////////////////////
 };
 
-
 #endif /* DATALOADER_H */
-

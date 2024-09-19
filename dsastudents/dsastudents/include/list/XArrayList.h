@@ -308,9 +308,14 @@ bool XArrayList<T>::removeItem(T item, void (*removeItemData)(T))
 {
     for (size_t i = 0; i < count; i++)
     {
-        if (data[i] == item)
+
+        if (XArrayList->equal(data[i], item, this->itemEqual))
         {
-            removeItemData(data[i]);
+            if (removeItemData != 0)
+            {
+                removeItemData(item);
+            }
+            removeAt(i);
             return true;
         }
     }
