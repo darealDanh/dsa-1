@@ -79,8 +79,10 @@ public:
     {
         /* TODO: your code is here for the initialization
          */
-        // initialize data, label
-        // initialize data_shape, label_shape
+        this->data = data;
+        this->label = label;
+        this->data_shape = data.shape();
+        this->label_shape = label.shape();
     }
     /* len():
      *  return the size of dimension 0
@@ -89,7 +91,7 @@ public:
     {
         /* TODO: your code is here to return the dataset's length
          */
-        return 0; // remove it when complete
+        return data_shape(0);
     }
 
     /* getitem:
@@ -99,17 +101,20 @@ public:
     {
         /* TODO: your code is here
          */
+        return label(index);
     }
 
     xt::svector<unsigned long> get_data_shape()
     {
         /* TODO: your code is here to return data_shape
          */
+        return data_shape;
     }
     xt::svector<unsigned long> get_label_shape()
     {
         /* TODO: your code is here to return label_shape
          */
+        return label_shape;
     }
 };
 
