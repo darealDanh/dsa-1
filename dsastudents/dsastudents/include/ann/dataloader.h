@@ -21,6 +21,8 @@ template <typename DType, typename LType>
 class DataLoader
 {
 public:
+    class Iterator;
+
 private:
     Dataset<DType, LType> *ptr_dataset;
     int batch_size;
@@ -38,6 +40,7 @@ public:
         this->batch_size = batch_size;
         this->shuffle = shuffle;
         this->drop_last = drop_last;
+        TensorDataset<DType, LType> *ptr_dataset = dynamic_cast<TensorDataset<DType, LType> *>(ptr_dataset);
         xt::svector << Batch<DType, LType> * > batches;
         xt::xarray<DType> data;
         xt::xarray<LType> label;
@@ -50,7 +53,33 @@ public:
 
     void doShuffle()
     {
-        // shuffe the dataset
+        xt::xarray<DType> data = ptr_dataset->get_data();
+        xt::xarray<LType> label = ptr_dataset->get_label();
+
+        int index = xt::arange(ptr_dataset->len());
+
+        xt::random::default_engine_type engine(0);
+        xt::random::shuffle(index, engine);
+
+        xt::xarray shuffle_data = xt::zeros<DType>(data.shape()[1]);
+        xt::xarray shuffle_label = xt::zeros<LType>(label.shape()[1]);
+
+        if (data.dimension() != 0)
+        {
+            for (int i = 0; i < index.size(); i++)
+            {
+                xt::view(shuffle_data, i, xt::all() == xt::view(data, index[i], xt::all()));
+            }
+        }
+        if (label.dimension() != 0)
+        {
+            for (int i = 0; i < index.size(); i++)
+            {
+                xt::view(shuffle_label, i, xt::all() == xt::view(label, index[i], xt::all()));
+            }
+        }
+        ptr_dataset->set_data(shuffle_data);
+        ptr_dataset->set_label(shuffle_label);
     }
 
     void generate_batches()
@@ -61,7 +90,7 @@ public:
         {
             if (droplast && i == total_batches - 1)
             {
-                if (ptr_dataset->get_data()->Dimension() == 0)
+                if (ptr_dataset->get_data()->dimension() == 0)
                 {
                     data = ptr_dataset->get_data();
                 }
@@ -69,7 +98,7 @@ public:
                 {
                     data = xt::view(ptr_dataset->get_data(), xt::range(i * batch_size, batch_size * i + 30 + remainder));
                 }
-                if (ptr_dataset->get_label()->Dimension() == 0)
+                if (ptr_dataset->get_label()->dimension() == 0)
                 {
                     label = ptr_dataset->get_label();
                 }
@@ -81,7 +110,7 @@ public:
             }
             else
             {
-                if (ptr_dataset->get_data()->Dimension() == 0)
+                if (ptr_dataset->get_data()->dimension() == 0)
                 {
                     data = ptr_dataset->get_data();
                 }
@@ -89,7 +118,7 @@ public:
                 {
                     data = xt::view(ptr_dataset->get_data(), xt::range(i * batch_size, batch_size * i + 30));
                 }
-                if (ptr_dataset->get_label()->Dimension() == 0)
+                if (ptr_dataset->get_label()->dimension() == 0)
                 {
                     label = ptr_dataset->get_label();
                 }
@@ -101,7 +130,58 @@ public:
             }
         }
     }
-    virtual ~DataLoader() {}
+    virtual ~DataLoader()
+    {
+        // destroy batches
+        for (int i = 0; i < batches.size(); i++)
+        {
+            delete batches[i];
+        }
+    }
+    class Iterator
+    {
+    private:
+        DataLoader<DType, LType> *ptr_loader;
+        int cursor;
+
+    public:
+        Iterator(DataLoader<DType, LType> *ptr_loader, int cursor) : ptr_loader(ptr_loader), cursor(cursor) {}
+        Iterator &operator=(const Iterator &iterator)
+        {
+            cursor = iterator.cursor;
+            ptr_loader = iterator.ptr_loader;
+            return *this;
+        }
+
+        // Dereferencing overload
+        Batch<DType, LType> operator*() const
+        {
+            return *ptr_loader->batches[cursor];
+        }
+
+        bool operator==(const Iterator &iterator) const
+        {
+            return cursor == iterator.cursor;
+        }
+        bool operator!=(const Iterator &iterator) const
+        {
+            return cursor != iterator.cursor;
+        }
+
+        // Prefix overload
+        Iterator &operator++()
+        {
+            this->cursor++;
+            return *this;
+        }
+        // Postfix overload
+        Iterator operator++(int)
+        {
+            Iterator iterator = *this;
+            ++*this;
+            return iterator;
+        }
+    };
 
     /////////////////////////////////////////////////////////////////////////
     // The section for supporting the iteration and for-each to DataLoader //

@@ -116,6 +116,10 @@ public:
          */
         return label_shape;
     }
+    xt::xarray<DType> get_data() { return data; }
+    xt::xarray<LType> get_label() { return label; }
+    xt::xarray<DType> set_data(xt::xarray<DType> data) { this->data = data; }
+    xt::xarray<LType> set_label(xt::xarray<LType> label) { this->label = label; }
 };
 
 #endif /* DATASET_H */
