@@ -267,10 +267,7 @@ XArrayList<T>::~XArrayList()
     {
         deleteUserData(this);
     }
-    else
-    {
-        delete[] data;
-    }
+    delete[] data;
 }
 
 template <class T>

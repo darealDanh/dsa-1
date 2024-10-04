@@ -1,15 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/cppFiles/file.h to edit this template
- */
-
-/*
- * File:   dataloader.h
- * Author: ltsach
- *
- * Created on September 2, 2024, 4:01 PM
- */
-
 #ifndef DATALOADER_H
 #define DATALOADER_H
 #include "ann/xtensor_lib.h"
@@ -28,6 +16,10 @@ private:
     int batch_size;
     bool shuffle;
     bool drop_last;
+    TensorDataset<DType, LType> *Tensor_dataset;
+    xt::xarray<DType> data;
+    xt::xarray<LType> label;
+    int total_batches;
     /*TODO: add more member variables to support the iteration*/
 public:
     DataLoader(Dataset<DType, LType> *ptr_dataset,
@@ -40,103 +32,64 @@ public:
         this->batch_size = batch_size;
         this->shuffle = shuffle;
         this->drop_last = drop_last;
-        TensorDataset<DType, LType> *ptr_dataset = dynamic_cast<TensorDataset<DType, LType> *>(ptr_dataset);
-        xt::svector << Batch<DType, LType> * > batches;
-        xt::xarray<DType> data;
-        xt::xarray<LType> label;
+        this->Tensor_dataset = dynamic_cast<TensorDataset<DType, LType> *>(ptr_dataset);
+        total_batches = Tensor_dataset->len() / batch_size;
         if (shuffle)
         {
             doShuffle();
         }
-        generate_batches();
     }
 
     void doShuffle()
     {
-        xt::xarray<DType> data = ptr_dataset->get_data();
-        xt::xarray<LType> label = ptr_dataset->get_label();
+        auto data = Tensor_dataset->getData();
+        auto label = Tensor_dataset->getLabel();
 
-        int index = xt::arange(ptr_dataset->len());
+        auto index = xt::arange<int>(0, data.shape()[0]);
 
         xt::random::default_engine_type engine(0);
         xt::random::shuffle(index, engine);
 
-        xt::xarray shuffle_data = xt::zeros<DType>(data.shape()[1]);
-        xt::xarray shuffle_label = xt::zeros<LType>(label.shape()[1]);
+        auto shuffle_data = xt::empty<DType>(data.shape());
+        auto shuffle_label = xt::empty<LType>(label.shape());
 
         if (data.dimension() != 0)
         {
             for (int i = 0; i < index.size(); i++)
             {
-                xt::view(shuffle_data, i, xt::all() == xt::view(data, index[i], xt::all()));
+                xt::view(shuffle_data, i, xt::all()) = xt::view(data, index[i], xt::all());
             }
+        }
+        else
+        {
+            shuffle_data = data;
         }
         if (label.dimension() != 0)
         {
             for (int i = 0; i < index.size(); i++)
             {
-                xt::view(shuffle_label, i, xt::all() == xt::view(label, index[i], xt::all()));
+                xt::view(shuffle_label, i, xt::all()) = xt::view(label, index[i], xt::all());
             }
         }
-        ptr_dataset->set_data(shuffle_data);
-        ptr_dataset->set_label(shuffle_label);
-    }
-
-    void generate_batches()
-    {
-        remainder = ptr_dataset->len() % batch_size;
-        total_batches = ptr_dataset->len() / batch_size;
-        for (int i = 0; i < total_batches; i++)
+        else
         {
-            if (droplast && i == total_batches - 1)
-            {
-                if (ptr_dataset->get_data()->dimension() == 0)
-                {
-                    data = ptr_dataset->get_data();
-                }
-                else
-                {
-                    data = xt::view(ptr_dataset->get_data(), xt::range(i * batch_size, batch_size * i + 30 + remainder));
-                }
-                if (ptr_dataset->get_label()->dimension() == 0)
-                {
-                    label = ptr_dataset->get_label();
-                }
-                else
-                {
-                    label = xt::view(ptr_dataset->get_label(), xt::range(i * batch_size, batch_size * i + 30 + remainder));
-                }
-                batches.push_back(new Batch<DType, LType>(data, label));
-            }
-            else
-            {
-                if (ptr_dataset->get_data()->dimension() == 0)
-                {
-                    data = ptr_dataset->get_data();
-                }
-                else
-                {
-                    data = xt::view(ptr_dataset->get_data(), xt::range(i * batch_size, batch_size * i + 30));
-                }
-                if (ptr_dataset->get_label()->dimension() == 0)
-                {
-                    label = ptr_dataset->get_label();
-                }
-                else
-                {
-                    label = xt::view(ptr_dataset->get_label(), xt::range(i * batch_size, batch_size * i + 30));
-                }
-                batches.push_back(new Batch<DType, LType>(data, label));
-            }
+            shuffle_label = label;
         }
+        Tensor_dataset->set_data(shuffle_data);
+        Tensor_dataset->set_label(shuffle_label);
     }
     virtual ~DataLoader()
     {
-        // destroy batches
-        for (int i = 0; i < batches.size(); i++)
-        {
-            delete batches[i];
-        }
+    }
+
+    Iterator begin()
+    {
+        return Iterator(this, 0);
+    }
+
+    Iterator end()
+    {
+        return Iterator(this, total_batches);
     }
     class Iterator
     {
@@ -156,7 +109,65 @@ public:
         // Dereferencing overload
         Batch<DType, LType> operator*() const
         {
-            return *ptr_loader->batches[cursor];
+            int batch_size = ptr_loader->batch_size;
+            bool drop_last = ptr_loader->drop_last;
+            int remainder = ptr_loader->Tensor_dataset->len() % batch_size;
+            int total_batches = ptr_loader->Tensor_dataset->len() / batch_size;
+            if (cursor >= total_batches)
+            {
+                throw;
+            }
+            if (ptr_loader->Tensor_dataset->len() < batch_size)
+            {
+                throw;
+            }
+            xt::xarray<DType> data;
+            xt::xarray<LType> label;
+            for (int i = 0; i < total_batches; i++)
+            {
+                int start = i * batch_size;
+                int end = batch_size * (i + 1);
+
+                if (drop_last && i == total_batches - 1)
+                {
+                    if (ptr_loader->Tensor_dataset->getData().dimension() == 0)
+                    {
+                        data = ptr_loader->Tensor_dataset->getData();
+                    }
+                    else
+                    {
+                        data = xt::view(ptr_loader->Tensor_dataset->getData(), xt::range(start, end + remainder));
+                    }
+                    if (ptr_loader->Tensor_dataset->getLabel().dimension() == 0)
+                    {
+                        label = ptr_loader->Tensor_dataset->getLabel();
+                    }
+                    else
+                    {
+                        label = xt::view(ptr_loader->Tensor_dataset->getLabel(), xt::range(start, end + remainder));
+                    }
+                }
+                else
+                {
+                    if (ptr_loader->Tensor_dataset->getData().dimension() == 0)
+                    {
+                        data = ptr_loader->Tensor_dataset->getData();
+                    }
+                    else
+                    {
+                        data = xt::view(ptr_loader->Tensor_dataset->getData(), xt::range(start, end));
+                    }
+                    if (ptr_loader->Tensor_dataset->getLabel().dimension() == 0)
+                    {
+                        label = ptr_loader->Tensor_dataset->getLabel();
+                    }
+                    else
+                    {
+                        label = xt::view(ptr_loader->Tensor_dataset->getLabel(), xt::range(start, end));
+                    }
+                }
+            }
+            return Batch<DType, LType>(data, label);
         }
 
         bool operator==(const Iterator &iterator) const

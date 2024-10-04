@@ -353,7 +353,9 @@ template <class T>
 DLinkedList<T>::~DLinkedList()
 {
     // TODO
-    removeInternalData();
+    clear();
+    delete head;
+    delete tail;
 }
 
 template <class T>
@@ -456,7 +458,7 @@ T DLinkedList<T>::removeAt(int index)
     // Removal logic
     current->prev->next = current->next;
     current->next->prev = current->prev;
-
+    delete current;
     count--;
     return data;
 }
@@ -487,14 +489,21 @@ template <class T>
 void DLinkedList<T>::clear()
 {
     // TODO
-    if (empty())
+    if (deleteUserData)
     {
-        return;
+        deleteUserData(this);
     }
-    else
+
+    Node *current = head->next;
+    while (current != tail)
     {
-        removeInternalData();
+        Node *next = current->next;
+        delete current;
+        current = next;
     }
+    head->next = tail;
+    tail->prev = head;
+    count = 0;
 }
 
 template <class T>
@@ -567,13 +576,13 @@ bool DLinkedList<T>::removeItem(T item, void (*removeItemData)(T))
             {
                 tail->prev = current->prev;
             }
-
             delete current;
             --count;
             return true;
         }
         current = current->next;
     }
+    delete current;
     return false; // Item not found
 }
 
@@ -601,7 +610,7 @@ string DLinkedList<T>::toString(string (*item2str)(T &))
      */
     // TODO
     stringstream result;
-    if (empty())
+    if (count == 0)
     {
         return "[]";
     }
@@ -658,6 +667,11 @@ void DLinkedList<T>::removeInternalData()
      * Traverses and deletes each node between the head and tail to release memory.
      */
     // TODO
+    if (deleteUserData)
+    {
+        deleteUserData(this);
+    }
+
     Node *current = head->next;
     while (current != tail)
     {

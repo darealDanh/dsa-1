@@ -91,7 +91,7 @@ public:
     {
         /* TODO: your code is here to return the dataset's length
          */
-        return data_shape(0);
+        return data_shape[0];
     }
 
     /* getitem:
@@ -101,7 +101,13 @@ public:
     {
         /* TODO: your code is here
          */
-        return label(index);
+        if (index >= data_shape[0])
+        {
+            throw;
+        }
+        xt::xarray<DType> data_item = xt::view(data, index, xt::all());
+        xt::xarray<LType> label_item = xt::view(label, index, xt::all());
+        return DataLabel<DType, LType>(data_item, label_item);
     }
 
     xt::svector<unsigned long> get_data_shape()
@@ -116,10 +122,10 @@ public:
          */
         return label_shape;
     }
-    xt::xarray<DType> get_data() { return data; }
-    xt::xarray<LType> get_label() { return label; }
-    xt::xarray<DType> set_data(xt::xarray<DType> data) { this->data = data; }
-    xt::xarray<LType> set_label(xt::xarray<LType> label) { this->label = label; }
+    xt::xarray<DType> getData() { return data; }
+    xt::xarray<LType> getLabel() { return label; }
+    void set_data(xt::xarray<DType> data) { this->data = data; }
+    void set_label(xt::xarray<LType> label) { this->label = label; }
 };
 
 #endif /* DATASET_H */
