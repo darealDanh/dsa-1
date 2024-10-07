@@ -1,0 +1,8 @@
+# ninja log v6
+33	3593	7499337082345462	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/include/xflens/cxxlapack/cxxlapack.cxx.obj	b034afbf77336547
+44	6265	7499337082455459	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/src/ann/Layer.cpp.obj	e158aed0824cc5fa
+41	6271	7499337082425451	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/src/ann/functions.cpp.obj	e977f2ae7eafa321
+35	6288	7499337082365464	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/src/ann/BaseModel.cpp.obj	e5055a10e340388
+56	6333	7499337082575465	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/src/ann/Softmax.cpp.obj	f6bd6cb025c4971e
+50	6350	7499337082515459	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/src/ann/ReLU.cpp.obj	c56c6a90a25251c7
+60	6576	7499337082615467	CMakeFiles/DSA_ASS2.dir/dsastudents/dsastudents/src/ann/xtensor_lib.cpp.obj	8a1a5e6d3a7687fd
