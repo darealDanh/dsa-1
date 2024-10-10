@@ -22,32 +22,22 @@ private:
     xt::xarray<LType> label;
     xt::xarray<unsigned long> index;
     int total_batches;
+    int m_seed;
     /*TODO: add more member variables to support the iteration*/
 public:
     DataLoader(Dataset<DType, LType> *ptr_dataset,
                int batch_size,
                bool shuffle = true,
-               bool drop_last = false)
+               bool drop_last = false, int seed = -1)
     {
         /*TODO: Add your code to do the initialization */
         this->ptr_dataset = ptr_dataset;
         this->batch_size = batch_size;
         this->shuffle = shuffle;
         this->drop_last = drop_last;
-
+        this->m_seed = seed;
         // copy data and label from dataset
-        this->total_batches = floor(ptr_dataset->len() / batch_size);
-        if (ptr_dataset->len() < batch_size)
-        {
-            if (!drop_last)
-            {
-                this->total_batches = 1;
-            }
-            else
-            {
-                this->total_batches = 0;
-            }
-        }
+        this->total_batches = ptr_dataset->len() / batch_size;
         this->index = xt::arange(0, ptr_dataset->len());
         if (shuffle)
         {
@@ -87,7 +77,15 @@ public:
 
     void doShuffle()
     {
-        xt::random::shuffle(index);
+        if (m_seed > 0)
+        {
+            xt::random::seed(m_seed);
+            xt::random::shuffle(index);
+        }
+        else
+        {
+            xt::random::shuffle(index);
+        }
     }
     virtual ~DataLoader()
     {
